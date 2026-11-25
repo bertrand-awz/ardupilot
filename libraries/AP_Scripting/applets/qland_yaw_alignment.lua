@@ -1,22 +1,16 @@
-local KEY, PREFIX = 93, "QYAW_"
-assert(param:add_table(KEY, PREFIX, 11), "QYAW: parameter table unavailable")
-
-local function parameter(index, name, default)
-    assert(param:add_param(KEY, index, name, default), "QYAW: parameter " .. name)
-    return Parameter(PREFIX .. name)
+-- QYAW_* parameters are native ArduPlane parameters.
+-- Read them by name so GCS changes take effect without restarting the script.
+local parameter_names = {
+    "ENABLE", "SYSID", "COMPID", "MIN_HGT", "DIST_MAX", "MAX_AGE",
+    "STABLE", "TOL", "RATE_MAX", "GAIN", "FORWARD"
+}
+for _, name in ipairs(parameter_names) do
+    assert(param:get("QYAW_" .. name) ~= nil, "QYAW: missing native parameter QYAW_" .. name)
 end
 
-local ENABLE = parameter(1, "ENABLE", 0)
-local SYSID = parameter(2, "SYSID", 255)
-local COMPID = parameter(3, "COMPID", 191)
-local MIN_HGT = parameter(4, "MIN_HGT", 4)
-local DIST_MAX = parameter(5, "DIST_MAX", 2)
-local MAX_AGE = parameter(6, "MAX_AGE", 0.4)
-local STABLE = parameter(7, "STABLE", 0.5)
-local TOL = parameter(8, "TOL", 3)
-local RATE_MAX = parameter(9, "RATE_MAX", 20)
-local GAIN = parameter(10, "GAIN", 1)
-local FORWARD = parameter(11, "FORWARD", 0)
+local function qyaw(name)
+    return param:get("QYAW_" .. name)
+end
 
 local supported, api = pcall(function()
     return quadplane.set_landing_yaw_rate and quadplane.clear_landing_yaw_rate
@@ -49,14 +43,14 @@ local function release(reason)
 end
 
 local function valid_parameters()
-    return ENABLE:get() == 1 and SYSID:get() >= 1 and SYSID:get() <= 255
-        and COMPID:get() >= 1 and COMPID:get() <= 255
-        and MIN_HGT:get() >= 1 and finite(DIST_MAX:get()) and DIST_MAX:get() > 0
-        and MAX_AGE:get() >= 0.05 and MAX_AGE:get() <= 0.5
-        and STABLE:get() >= 0.1 and STABLE:get() <= 5
-        and TOL:get() >= 1 and TOL:get() <= 20
-        and RATE_MAX:get() > 0 and RATE_MAX:get() <= 45
-        and GAIN:get() > 0 and GAIN:get() <= 5 and finite(FORWARD:get())
+    return qyaw("ENABLE") == 1 and qyaw("SYSID") >= 1 and qyaw("SYSID") <= 255
+        and qyaw("COMPID") >= 1 and qyaw("COMPID") <= 255
+        and qyaw("MIN_HGT") >= 1 and finite(qyaw("DIST_MAX")) and qyaw("DIST_MAX") > 0
+        and qyaw("MAX_AGE") >= 0.05 and qyaw("MAX_AGE") <= 0.5
+        and qyaw("STABLE") >= 0.1 and qyaw("STABLE") <= 5
+        and qyaw("TOL") >= 1 and qyaw("TOL") <= 20
+        and qyaw("RATE_MAX") > 0 and qyaw("RATE_MAX") <= 45
+        and qyaw("GAIN") > 0 and qyaw("GAIN") <= 5 and finite(qyaw("FORWARD"))
 end
 
 local function payload_offset(raw)
@@ -110,14 +104,14 @@ local function receive(now)
         local raw, _, received_ms = mavlink:receive_chan()
         if not raw then break end
         local offset = payload_offset(raw)
-        if offset and string.byte(raw, 8) == SYSID:get()
+        if offset and string.byte(raw, 8) == qyaw("SYSID")
             -- QYAW_SYSID accepts 1..255; reject extended IDs sharing the low byte.
             and (offset == 13 or string.unpack("<I3", raw, 9) == 0)
-            and string.byte(raw, offset - 4) == COMPID:get()
+            and string.byte(raw, offset - 4) == qyaw("COMPID")
             and string.unpack("<I3", raw, offset - 3) == 149 then
             local sample = decode(raw, offset)
             local age = (now - received_ms):toint()
-            if not sample or age < 0 or age > MAX_AGE:get()*1000 then
+            if not sample or age < 0 or age > qyaw("MAX_AGE")*1000 then
                 target, stable_since = nil, nil
             elseif newer(sample.stamp, last_capture) then
                 local gap = last_capture and capture_delta_ms(sample.stamp, last_capture) or math.huge
@@ -125,10 +119,10 @@ local function receive(now)
                     transport_delay_ms = math.max(0, transport_delay_ms + (received_ms-last_received):toint() - gap)
                 end
                 -- Bound added transport delay without converting either clock to floating point.
-                if transport_delay_ms > MAX_AGE:get()*1000 then
+                if transport_delay_ms > qyaw("MAX_AGE")*1000 then
                     target, stable_since = nil, nil
                 else
-                    if not target or gap > MAX_AGE:get()*1000 then
+                    if not target or gap > qyaw("MAX_AGE")*1000 then
                         stable_since = nil
                     end
                     sample.received = received_ms
@@ -148,10 +142,10 @@ local function heading_error(sample)
     local north = cp*sample.x + sp*sr*sample.y + sp*cr*sample.z
     local east = cr*sample.y - sr*sample.z
     local down = -sp*sample.x + cp*sr*sample.y + cp*cr*sample.z
-    if down < MIN_HGT:get() or north*north + east*east > DIST_MAX:get()^2 then return nil end
+    if down < qyaw("MIN_HGT") or north*north + east*east > qyaw("DIST_MAX")^2 then return nil end
 
     local w, x, y, z = sample.w, sample.qx, sample.qy, sample.qz
-    local offset = math.rad(FORWARD:get())
+    local offset = math.rad(qyaw("FORWARD"))
     local c, s = math.cos(offset), math.sin(offset)
     local vx = c*(1 - 2*(y*y + z*z)) + s*2*(x*y - w*z)
     local vy = c*2*(x*y + w*z) + s*(1 - 2*(x*x + z*z))
@@ -176,7 +170,7 @@ local function update()
         release("vehicle unavailable")
         return
     end
-    if not target or (now - target.received):toint() > MAX_AGE:get()*1000 then
+    if not target or (now - target.received):toint() > qyaw("MAX_AGE")*1000 then
         target = nil
         release("waiting for target")
         return
@@ -187,17 +181,17 @@ local function update()
         return
     end
     stable_since = stable_since or now
-    if (now - stable_since):toint() < STABLE:get()*1000 then
+    if (now - stable_since):toint() < qyaw("STABLE")*1000 then
         quadplane:clear_landing_yaw_rate()
         set_state("acquiring target")
         return
     end
-    if math.abs(error_deg) <= TOL:get() then
+    if math.abs(error_deg) <= qyaw("TOL") then
         correcting = false
-    elseif math.abs(error_deg) > TOL:get() + 2 then
+    elseif math.abs(error_deg) > qyaw("TOL") + 2 then
         correcting = true
     end
-    local rate = correcting and math.max(-RATE_MAX:get(), math.min(RATE_MAX:get(), GAIN:get()*error_deg)) or 0
+    local rate = correcting and math.max(-qyaw("RATE_MAX"), math.min(qyaw("RATE_MAX"), qyaw("GAIN")*error_deg)) or 0
     if not quadplane:set_landing_yaw_rate(rate) then
         release("pilot or flight controller priority")
         return

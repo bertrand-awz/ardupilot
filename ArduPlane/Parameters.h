@@ -581,6 +581,20 @@ public:
 
     AP_UInt32       oneshot_mask;
     
+    // QLAND precision landing yaw alignment parameters.
+    // AP_Int16 is used for SYSID/COMPID so MAVLink ID 255 is representable.
+    AP_Int8  qyaw_enable;
+    AP_Int16 qyaw_sysid;
+    AP_Int16 qyaw_compid;
+    AP_Float qyaw_min_hgt;
+    AP_Float qyaw_dist_max;
+    AP_Float qyaw_max_age;
+    AP_Float qyaw_stable;
+    AP_Float qyaw_tol;
+    AP_Float qyaw_rate_max;
+    AP_Float qyaw_gain;
+    AP_Float qyaw_forward;
+
     AP_UInt8        axis_bitmask; // axes to be autotuned
 
 #if AP_RANGEFINDER_ENABLED

@@ -1312,6 +1312,92 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GUIDED_TIMEOUT", 40, ParametersG2, guided_timeout, 3.0f),
 
+
+    // QLAND precision landing yaw alignment
+    // @Param: QYAW_ENABLE
+    // @DisplayName: QLAND yaw alignment enable
+    // @Description: Enable Lua-assisted yaw alignment during QLAND precision landing.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("QYAW_ENABLE", 42, ParametersG2, qyaw_enable, 0),
+
+    // @Param: QYAW_SYSID
+    // @DisplayName: QLAND yaw target system ID
+    // @Description: MAVLink system ID of the landing target publisher.
+    // @Range: 1 255
+    // @User: Advanced
+    AP_GROUPINFO("QYAW_SYSID", 43, ParametersG2, qyaw_sysid, 255),
+
+    // @Param: QYAW_COMPID
+    // @DisplayName: QLAND yaw target component ID
+    // @Description: MAVLink component ID of the landing target publisher.
+    // @Range: 1 255
+    // @User: Advanced
+    AP_GROUPINFO("QYAW_COMPID", 44, ParametersG2, qyaw_compid, 191),
+
+    // @Param: QYAW_MIN_HGT
+    // @DisplayName: QLAND yaw minimum target height
+    // @Description: Minimum downward target distance for yaw alignment.
+    // @Units: m
+    // @Range: 1 100
+    // @User: Advanced
+    AP_GROUPINFO("QYAW_MIN_HGT", 45, ParametersG2, qyaw_min_hgt, 4.0f),
+
+    // @Param: QYAW_DIST_MAX
+    // @DisplayName: QLAND yaw maximum horizontal distance
+    // @Description: Maximum horizontal distance from the target for yaw alignment.
+    // @Units: m
+    // @Range: 0.1 100
+    // @User: Advanced
+    AP_GROUPINFO("QYAW_DIST_MAX", 46, ParametersG2, qyaw_dist_max, 2.0f),
+
+    // @Param: QYAW_MAX_AGE
+    // @DisplayName: QLAND yaw maximum target age
+    // @Description: Maximum permitted target measurement age.
+    // @Units: s
+    // @Range: 0.05 0.5
+    // @User: Advanced
+    AP_GROUPINFO("QYAW_MAX_AGE", 47, ParametersG2, qyaw_max_age, 0.4f),
+
+    // @Param: QYAW_STABLE
+    // @DisplayName: QLAND yaw target stability time
+    // @Description: Required continuous target stability before yaw correction.
+    // @Units: s
+    // @Range: 0.1 5
+    // @User: Advanced
+    AP_GROUPINFO("QYAW_STABLE", 48, ParametersG2, qyaw_stable, 0.5f),
+
+    // @Param: QYAW_TOL
+    // @DisplayName: QLAND yaw alignment tolerance
+    // @Description: Heading error within this angle is considered aligned.
+    // @Units: deg
+    // @Range: 1 20
+    // @User: Advanced
+    AP_GROUPINFO("QYAW_TOL", 49, ParametersG2, qyaw_tol, 3.0f),
+
+    // @Param: QYAW_RATE_MAX
+    // @DisplayName: QLAND yaw maximum correction rate
+    // @Description: Maximum commanded yaw correction rate.
+    // @Units: deg/s
+    // @Range: 0.1 45
+    // @User: Advanced
+    AP_GROUPINFO("QYAW_RATE_MAX", 50, ParametersG2, qyaw_rate_max, 20.0f),
+
+    // @Param: QYAW_GAIN
+    // @DisplayName: QLAND yaw correction gain
+    // @Description: Proportional gain applied to heading error.
+    // @Range: 0.01 5
+    // @User: Advanced
+    AP_GROUPINFO("QYAW_GAIN", 51, ParametersG2, qyaw_gain, 1.0f),
+
+    // @Param: QYAW_FORWARD
+    // @DisplayName: QLAND yaw forward-axis offset
+    // @Description: Rotation offset between the target sensor forward axis and vehicle forward axis.
+    // @Units: deg
+    // @Range: -180 180
+    // @User: Advanced
+    AP_GROUPINFO("QYAW_FORWARD", 52, ParametersG2, qyaw_forward, 0.0f),
+
 #if AP_RANGEFINDER_ENABLED
     // @Param: RNGFND_LND_DIST
     // @DisplayName: Rangefinder landing engagement distance
